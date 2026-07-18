@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neo-Futuristic Tic Tac Toe</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+        }
+
+        .glass {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .cell {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .cell.x { color: #22d3ee; text-shadow: 0 0 15px rgba(34, 211, 238, 0.5); }
+        .cell.o { color: #f43f5e; text-shadow: 0 0 15px rgba(244, 63, 94, 0.5); }
+        
+        .winning-cell {
+            animation: pulse 1.5s infinite;
+            border-color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0px rgba(255,255,255,0); }
+            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.2); }
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen text-slate-100 overflow-hidden">
+
+    <div class="glass p-8 md:p-12 rounded-3xl shadow-2xl w-full max-w-md mx-4">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-black tracking-tighter mb-2 bg-gradient-to-r from-cyan-400 to-rose-500 bg-clip-text text-transparent">TIC TAC TOE</h1>
+            <div id="status" class="text-sm font-medium text-slate-400 uppercase tracking-widest">Player X's Turn</div>
+        </header>
+
+        <!-- Board -->
+        <div id="board" class="grid grid-cols-3 gap-3 mb-10">
+            <div data-index="0" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="1" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="2" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="3" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="4" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="5" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="6" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="7" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+            <div data-index="8" class="cell h-24 w-24 md:h-28 md:w-28 flex items-center justify-center text-4xl md:text-5xl font-black bg-slate-900/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 border border-slate-700/50"></div>
+        </div>
+
+        <!-- Reset -->
+        <button id="reset-button" class="w-full py-4 bg-gradient-to-r from-cyan-600 to-rose-600 hover:from-cyan-500 hover:to-rose-500 transition-all duration-300 rounded-xl font-bold uppercase tracking-widest shadow-lg shadow-cyan-900/20 active:scale-95">
+            Restart Match
+        </button>
+    </div>
+
+    <script>
+        const cells = document.querySelectorAll('.cell');
+        const statusDisplay = document.getElementById('status');
+        const resetButton = document.getElementById('reset-button');
+        
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = ["", "", "", "", "", "", "", "", ""];
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8],
+            [0, 3, 6], [1, 4, 7], [2, 5, 8],
+            [0, 4, 8], [2, 4, 6]
+        ];
+
+        function handleCellClick(event) {
+            const clickedCell = event.target;
+            const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
+
+            if (gameState[clickedCellIndex] !== "" || !gameActive) return;
+
+            gameState[clickedCellIndex] = currentPlayer;
+            clickedCell.innerText = currentPlayer;
+            clickedCell.classList.add(currentPlayer.toLowerCase(), 'fade-in');
+            
+            checkForWinner();
+        }
+
+        function checkForWinner() {
+            let roundWon = false;
+            let winningCombo = [];
+
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState[a] && gameState[a] === gameState[b] && gameState[a] === gameState[c]) {
+                    roundWon = true;
+                    winningCombo = [a, b, c];
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.innerText = `Player ${currentPlayer} Wins!`;
+                gameActive = false;
+                winningCombo.forEach(index => cells[index].classList.add('winning-cell'));
+                return;
+            }
+
+            if (!gameState.includes("")) {
+                statusDisplay.innerText = "Match Draw!";
+                gameActive = false;
+                return;
+            }
+
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusDisplay.innerText = `Player ${currentPlayer}'s Turn`;
+        }
+
+        function restartGame() {
+            currentPlayer = 'X';
+            gameActive = true;
+            gameState = ["", "", "", "", "", "", "", "", ""];
+            statusDisplay.innerText = `Player X's Turn`;
+            cells.forEach(cell => {
+                cell.innerText = "";
+                cell.classList.remove('x', 'o', 'winning-cell', 'fade-in');
+            });
+        }
+
+        cells.forEach(cell => cell.addEventListener('click', handleCellClick));
+        resetButton.addEventListener('click', restartGame);
+    </script>
+</body>
+</html>
